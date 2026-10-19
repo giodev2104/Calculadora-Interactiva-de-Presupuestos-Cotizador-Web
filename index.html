@@ -4,37 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calcula tu presupuesto</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
-
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { theme: { extend: { colors: {
     paper: '#EEF2F6', ink: '#0F2038', plano: '#2447D6', marker: '#FFD23F', line: '#C9D3E0'
   } } } };
 </script>
-
 <style>
   body { font-family: 'Figtree', system-ui, sans-serif; color: #0F2038; background-color: #EEF2F6;
          background-image: linear-gradient(rgba(36,71,214,.06) 1px, transparent 1px),
                            linear-gradient(90deg, rgba(36,71,214,.06) 1px, transparent 1px);
          background-size: 28px 28px; }
   .font-display { font-family: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; }
-
-  /* Slider personalizado: el tramo recorrido se pinta con la variable --p */
   input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px;
     background: linear-gradient(to right, #2447D6 var(--p, 0%), #C9D3E0 var(--p, 0%)); outline: none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%;
     background: #FFD23F; border: 3px solid #0F2038; cursor: grab; }
   input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%;
     background: #FFD23F; border: 3px solid #0F2038; cursor: grab; }
-
   dialog::backdrop { background: rgba(15,32,56,.65); }
   dialog { max-height: 92vh; }
   :focus-visible { outline: 3px solid #2447D6; outline-offset: 2px; }
-  body { padding-bottom: 96px; }               
+  body { padding-bottom: 96px; }
   @media (min-width: 1024px) { body { padding-bottom: 0; } }
   .card { background:#fff; border:2px solid #0F2038; border-radius:20px; box-shadow:5px 5px 0 #0F2038; }
   .lift { transition: transform .15s; } .lift:hover { transform: translate(-2px,-2px); }
@@ -52,9 +46,7 @@
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
-
 <body class="min-h-screen">
-
 <header class="max-w-5xl mx-auto px-4 pt-8 pb-6 sm:pt-14">
   <p class="font-display font-extrabold text-plano text-lg" id="brand"></p>
   <h1 class="font-display font-extrabold text-4xl sm:text-6xl leading-[1.05] mt-3 max-w-3xl">Tu presupuesto, al momento</h1>
@@ -64,25 +56,20 @@
     <li class="chip">✓ Precio al instante</li><li class="chip">✓ Respuesta en 24 h</li><li class="chip">✓ Sin compromiso</li>
   </ul>
 </header>
-
 <main class="max-w-5xl mx-auto px-4 pb-10 grid lg:grid-cols-[1fr_340px] gap-8 items-start">
-
   <div class="space-y-10">
-
     <section aria-labelledby="h1">
       <h2 id="h1" class="font-display font-extrabold text-xl flex items-center gap-3">
         <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">1</span> ¿Qué necesitas?
       </h2>
       <div id="services" class="mt-4 grid sm:grid-cols-3 gap-3" role="radiogroup" aria-labelledby="h1"></div>
     </section>
-
     <section aria-labelledby="h2">
       <h2 id="h2" class="font-display font-extrabold text-xl flex items-center gap-3">
         <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">2</span> Ajusta los detalles
       </h2>
       <div id="params" class="mt-4 space-y-4"></div>
     </section>
-
     <section aria-labelledby="h3">
       <h2 id="h3" class="font-display font-extrabold text-xl flex items-center gap-3">
         <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">3</span> ¿Quieres añadir algo?
@@ -90,7 +77,6 @@
       <div id="extras" class="mt-4 grid sm:grid-cols-2 gap-3"></div>
     </section>
   </div>
-
   <aside class="hidden lg:block sticky top-6" aria-live="polite">
     <div class="card overflow-hidden">
       <div class="bg-ink text-white p-5">
@@ -106,7 +92,6 @@
     </div>
   </aside>
 </main>
-
 <div class="lg:hidden fixed inset-x-0 bottom-0 z-30">
   <div id="sheet" class="hidden bg-white border-t-2 border-ink px-4 pt-4 pb-3 max-h-[55vh] overflow-y-auto">
     <div id="summaryMobile"></div>
@@ -119,7 +104,6 @@
     <button data-open-quote class="rounded-xl bg-marker text-ink font-bold px-5 py-3">Pedir presupuesto</button>
   </div>
 </div>
-
 <dialog id="quoteDialog" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border-2 border-ink shadow-[8px_8px_0_#FFD23F] p-0 bg-white text-ink">
   <form id="leadForm" novalidate class="p-5 sm:p-6">
     <div class="flex justify-between items-start">
@@ -133,7 +117,6 @@
     <button type="submit" class="mt-6 w-full rounded-xl bg-plano text-white font-bold py-3.5 hover:bg-ink transition-colors">Enviar presupuesto</button>
     <p class="text-xs text-ink/50 mt-3">Usaremos tus datos solo para enviarte este presupuesto.</p>
   </form>
-
   <div id="okView" class="hidden p-6 text-center">
     <div class="pop mx-auto w-16 h-16 rounded-full bg-marker border-2 border-ink grid place-items-center text-2xl">✓</div>
     <h2 class="font-display font-extrabold text-2xl mt-4">¡Presupuesto enviado!</h2>
@@ -145,16 +128,15 @@
     </div>
   </div>
 </dialog>
-
 <script>
 const CONFIG = {
-  brand: 'Tu Empresa',           
+  brand: 'Tu Empresa',
   locale: 'es-ES',
   currency: 'EUR',
-  vat: 0.21,                      
-  validDays: 15,               
-  email: 'hola@tuempresa.com'    
-
+  vat: 0.21,
+  validDays: 15,
+  email: 'hola@tuempresa.com'
+};
 const SERVICES = [
   { id: 'reforma', icon: '🏠', name: 'Reforma de vivienda', desc: 'Obra, acabados y baños',
     base: 250, baseLabel: 'Visita técnica y proyecto',
@@ -169,7 +151,6 @@ const SERVICES = [
       { id: 'led', label: 'Iluminación LED', price: 650 },
       { id: 'pintura', label: 'Pintura de techos', price: 420 },
       { id: 'licencia', label: 'Gestión de licencia', price: 350 } ] },
-
   { id: 'vehiculo', icon: '🚗', name: 'Mantenimiento de vehículo', desc: 'Revisión, reparación y piezas',
     base: 35, baseLabel: 'Diagnosis con equipo',
     params: [
@@ -184,7 +165,6 @@ const SERVICES = [
       { id: 'lavado', label: 'Lavado interior y exterior', price: 25 },
       { id: 'itv', label: 'Gestión de ITV', price: 60 },
       { id: 'garantia', label: 'Garantía ampliada 12 meses', price: 90 } ] },
-
   { id: 'consultoria', icon: '💼', name: 'Consultoría', desc: 'Asesoría para tu negocio',
     base: 0, baseLabel: '',
     params: [
@@ -197,29 +177,24 @@ const SERVICES = [
       { id: 'taller', label: 'Taller para el equipo', price: 450 },
       { id: 'soporte', label: 'Soporte posterior 30 días', price: 300 } ] }
 ];
-
 const state = { serviceId: SERVICES[0].id, values: {}, extras: new Set(), leads: [] };
-window.__leads = state.leads;   
+window.__leads = state.leads;
 const $ = (s) => document.querySelector(s);
 const fmt = (n) => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency }).format(n);
 const round2 = (n) => Math.round(n * 100) / 100;
 const current = () => SERVICES.find((s) => s.id === state.serviceId);
-
 function resetValues() {
   state.values = {}; state.extras = new Set();
   current().params.forEach((p) => (state.values[p.id] = p.def));
 }
-
 function calc() {
   const s = current(), lines = [];
   if (s.base) lines.push({ label: s.baseLabel, detail: '', amount: s.base });
-
   s.params.filter((p) => p.type === 'range').forEach((p) => {
     const v = state.values[p.id], amount = round2(v * p.rate);
     if (amount > 0) lines.push({ label: p.label, detail: `${v} ${p.unit} × ${fmt(p.rate)}`, amount });
   });
   const subtotal = lines.reduce((a, l) => a + l.amount, 0);
-
   s.params.filter((p) => p.type === 'choice').forEach((p) => {
     const o = p.options[state.values[p.id]];
     if (o.mult && o.mult !== 1) {
@@ -229,16 +204,12 @@ function calc() {
       lines.push({ label: `${p.label}: ${o.label}`, detail: '', amount: o.add });
     }
   });
-
   s.extras.filter((e) => state.extras.has(e.id)).forEach((e) => lines.push({ label: e.label, detail: 'Extra', amount: e.price }));
-
   const net = round2(lines.reduce((a, l) => a + l.amount, 0));
   const vat = round2(net * CONFIG.vat);
   return { lines, net, vat, total: round2(net + vat) };
 }
-
 const fromPrice = (s) => (s.base || 0) + s.params.filter((p) => p.type === 'range').reduce((a, p) => a + p.min * p.rate, 0);
-
 function renderServices() {
   $('#services').innerHTML = SERVICES.map((s) => {
     const on = s.id === state.serviceId;
@@ -251,7 +222,6 @@ function renderServices() {
       <span class="block text-sm font-bold mt-3 ${on ? 'text-marker' : 'text-plano'}">Desde ${fmt(fromPrice(s))} + IVA</span></button>`;
   }).join('');
 }
-
 function renderParams() {
   $('#params').innerHTML = current().params.map((p) => {
     if (p.type === 'range') {
@@ -271,14 +241,12 @@ function renderParams() {
   }).join('');
   current().params.filter((p) => p.type === 'range').forEach((p) => syncRange(p.id));
 }
-
 function syncRange(id) {
   const p = current().params.find((x) => x.id === id), el = $(`#r-${id}`);
   const pct = ((el.value - p.min) / (p.max - p.min)) * 100;
   el.style.setProperty('--p', pct + '%');
   $(`#o-${id}`).textContent = `${el.value} ${p.unit}`;
 }
-
 function renderExtras() {
   $('#extras').innerHTML = current().extras.map((e) => {
     const on = state.extras.has(e.id);
@@ -288,7 +256,6 @@ function renderExtras() {
       <span class="flex-1 font-medium leading-snug">${e.label}</span><span class="font-bold">+${fmt(e.price)}</span></label>`;
   }).join('');
 }
-
 let shownTotal = 0;
 function animateTotal(to) {
   const els = ['#totalDesktop', '#totalMobile', '#totalModal'].map($), from = shownTotal; shownTotal = to;
@@ -302,7 +269,6 @@ function animateTotal(to) {
   };
   animateTotal.id = requestAnimationFrame(step);
 }
-
 function renderSummary() {
   const c = calc();
   const html = `<ul class="divide-y divide-dashed divide-ink/25 text-sm">
@@ -316,18 +282,14 @@ function renderSummary() {
   animateTotal(c.total);
   document.querySelectorAll('.vd').forEach((n) => (n.textContent = CONFIG.validDays));
 }
-
 document.addEventListener('click', (e) => {
   const svc = e.target.closest('[data-service]');
   if (svc) { state.serviceId = svc.dataset.service; resetValues(); renderAll(); return $(`[data-service="${svc.dataset.service}"]`).focus(); }
-
   const ch = e.target.closest('[data-choice]');
   if (ch) { state.values[ch.dataset.choice] = +ch.dataset.i; renderParams(); renderSummary(); return $(`[data-choice="${ch.dataset.choice}"][data-i="${ch.dataset.i}"]`).focus(); }
-
   if (e.target.closest('[data-open-quote]')) return openQuote();
   if (e.target.closest('[data-close]')) $('#quoteDialog').close();
 });
-
 document.addEventListener('input', (e) => {
   if (e.target.dataset.range) { state.values[e.target.dataset.range] = +e.target.value; syncRange(e.target.dataset.range); renderSummary(); }
 });
@@ -341,14 +303,12 @@ $('#toggleSheet').addEventListener('click', () => {
   const open = $('#sheet').classList.toggle('hidden') === false;
   $('#toggleSheet').setAttribute('aria-expanded', open);
 });
-
 const FIELDS = [
   { id: 'name', label: 'Nombre', type: 'text', auto: 'name', req: true, check: (v) => v.length >= 2, msg: 'Escribe tu nombre.' },
   { id: 'email', label: 'Email', type: 'email', auto: 'email', req: true, check: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v), msg: 'Escribe un email válido, por ejemplo nombre@correo.com.' },
   { id: 'phone', label: 'Teléfono', type: 'tel', auto: 'tel', req: true, check: (v) => v.replace(/\D/g, '').length >= 9, msg: 'Escribe un teléfono de al menos 9 dígitos.' },
   { id: 'notes', label: 'Notas (opcional)', type: 'textarea', req: false }
 ];
-
 function openQuote() {
   $('#leadForm').classList.remove('hidden'); $('#okView').classList.add('hidden');
   $('#fields').innerHTML = FIELDS.map((f) => `<div>
@@ -359,7 +319,6 @@ function openQuote() {
     <p id="e-${f.id}" class="hidden text-sm text-red-700 mt-1" role="alert">${f.msg || ''}</p></div>`).join('');
   $('#quoteDialog').showModal();
 }
-
 $('#leadForm').addEventListener('submit', (e) => {
   e.preventDefault();
   let ok = true; const data = {};
@@ -371,14 +330,11 @@ $('#leadForm').addEventListener('submit', (e) => {
     if (bad) ok = false;
   });
   if (!ok) return $('#leadForm [aria-invalid], #leadForm input').focus();
-
   const c = calc(), s = current();
   const lead = { ref: 'P-' + Date.now().toString(36).toUpperCase().slice(-6), date: new Date(), client: data, service: s.name, ...c };
   state.leads.push(lead);
-  console.log('Lead guardado (simulado):', lead);
   showSuccess(lead);
 });
-
 function quoteText(l) {
   const until = new Date(l.date.getTime() + CONFIG.validDays * 864e5).toLocaleDateString(CONFIG.locale);
   return [`PRESUPUESTO ${l.ref} — ${CONFIG.brand}`, `Fecha: ${l.date.toLocaleDateString(CONFIG.locale)} (válido hasta ${until})`,
@@ -387,8 +343,7 @@ function quoteText(l) {
     `Base imponible: ${fmt(l.net)}`, `IVA (${Math.round(CONFIG.vat * 100)} %): ${fmt(l.vat)}`, `TOTAL: ${fmt(l.total)}`,
     l.client.notes ? `\nNotas: ${l.client.notes}` : '', '\nEstimación orientativa sujeta a confirmación.'].join('\n');
 }
-
-function burst() {                                          
+function burst() {
   const cols = ['#FFD23F', '#2447D6', '#0F2038'];
   for (let i = 0; i < 28; i++) {
     const n = document.createElement('i'); n.className = 'cf';
@@ -397,19 +352,17 @@ function burst() {
   }
   setTimeout(() => document.querySelectorAll('.cf').forEach((n) => n.remove()), 2200);
 }
-
 function showSuccess(l) {
   $('#leadForm').classList.add('hidden'); $('#okView').classList.remove('hidden');
   $('#okRef').textContent = l.ref; burst();
   const text = quoteText(l);
-  $('#btnDownload').onclick = () => {                    
+  $('#btnDownload').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
     a.download = `presupuesto-${l.ref}.txt`; a.click(); URL.revokeObjectURL(a.href);
   };
   $('#btnMail').href = `mailto:${l.client.email}?cc=${CONFIG.email}&subject=${encodeURIComponent('Tu presupuesto ' + l.ref)}&body=${encodeURIComponent(text)}`;
 }
-
 function renderAll() { renderServices(); renderParams(); renderExtras(); renderSummary(); }
 $('#brand').textContent = CONFIG.brand;
 resetValues(); renderAll();
