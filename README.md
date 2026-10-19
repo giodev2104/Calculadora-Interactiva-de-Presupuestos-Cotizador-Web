@@ -4,7 +4,8 @@ Herramienta interactiva de captación y cotización automática diseñada para P
 
 ⚡ Demo en Vivo (Sin Instalación)
 
-No requiere ninguna instalación. Puedes probar la aplicación funcional directamente desde tu navegador:
+No requiere ninguna instalación. Puedes probar la aplicación funcional directamente desde tu navegador
+
 👉 Ver Demo: https://giodev2104.github.io/Calculadora-Interactiva-de-Presupuestos-Cotizador-Web/
 
 💼 Impacto y Valor para el Negocio
