@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calcula tu presupuesto</title>
+
+<!-- Tipografías (opcionales: si no cargan, se usan las de sistema) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS vía CDN (sin compilación) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Paleta "plano de obra": papel azulado, tinta marino, azul de plano y amarillo marcador
+  tailwind.config = { theme: { extend: { colors: {
+    paper: '#EEF2F6', ink: '#0F2038', plano: '#2447D6', marker: '#FFD23F', line: '#C9D3E0'
+  } } } };
+</script>
+
+<style>
+  body { font-family: 'Figtree', system-ui, sans-serif; color: #0F2038; background-color: #EEF2F6;
+         /* cuadrícula sutil de papel milimetrado */
+         background-image: linear-gradient(rgba(36,71,214,.06) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(36,71,214,.06) 1px, transparent 1px);
+         background-size: 28px 28px; }
+  .font-display { font-family: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; }
+
+  /* Slider personalizado: el tramo recorrido se pinta con la variable --p */
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px;
+    background: linear-gradient(to right, #2447D6 var(--p, 0%), #C9D3E0 var(--p, 0%)); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%;
+    background: #FFD23F; border: 3px solid #0F2038; cursor: grab; }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%;
+    background: #FFD23F; border: 3px solid #0F2038; cursor: grab; }
+
+  dialog::backdrop { background: rgba(15,32,56,.65); }
+  dialog { max-height: 92vh; }
+  :focus-visible { outline: 3px solid #2447D6; outline-offset: 2px; }
+  body { padding-bottom: 96px; }               /* hueco para la barra inferior en móvil */
+  @media (min-width: 1024px) { body { padding-bottom: 0; } }
+  /* Lenguaje visual "plano": bordes de tinta y sombras duras desplazadas */
+  .card { background:#fff; border:2px solid #0F2038; border-radius:20px; box-shadow:5px 5px 0 #0F2038; }
+  .lift { transition: transform .15s; } .lift:hover { transform: translate(-2px,-2px); }
+  .chip { background:#FFD23F; border:2px solid #0F2038; border-radius:10px; padding:1px 10px; }
+  label:focus-within { outline:3px solid #2447D6; outline-offset:2px; }
+  /* Línea de cota decorativa (como en un plano técnico) */
+  .dim { display:flex; align-items:center; gap:10px; height:18px; color:#2447D6; font-size:12px; font-weight:700;
+         border-left:2px solid #2447D6; border-right:2px solid #2447D6; }
+  .dim::before, .dim::after { content:""; flex:1; border-top:2px solid #2447D6; }
+  /* Números de paso */
+  section h2 > span:first-child { width:38px; height:38px; background:#FFD23F; color:#0F2038; border:2px solid #0F2038; font-weight:800; font-size:16px; box-shadow:2px 2px 0 #0F2038; }
+  /* Confirmación */
+  #okView { position:relative; overflow:hidden; }
+  .pop { animation: pop .55s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .cf { position:absolute; top:-14px; width:8px; height:12px; border-radius:2px; animation: fall 1.7s ease-in forwards; }
+  @keyframes fall { to { transform: translate(var(--dx), 440px) rotate(540deg); opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+
+<body class="min-h-screen">
+
+<header class="max-w-5xl mx-auto px-4 pt-8 pb-6 sm:pt-14">
+  <p class="font-display font-extrabold text-plano text-lg" id="brand"></p>
+  <h1 class="font-display font-extrabold text-4xl sm:text-6xl leading-[1.05] mt-3 max-w-3xl">Tu presupuesto, al momento</h1>
+  <p class="mt-4 text-ink/70 max-w-xl text-lg">Elige el servicio, ajusta los detalles y mira cómo cambia el precio. Sin compromiso.</p>
+  <div class="dim mt-6 max-w-xl" aria-hidden="true"><span>menos de 1 minuto</span></div>
+  <ul class="mt-5 flex flex-wrap gap-2 text-sm font-bold">
+    <li class="chip">✓ Precio al instante</li><li class="chip">✓ Respuesta en 24 h</li><li class="chip">✓ Sin compromiso</li>
+  </ul>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 pb-10 grid lg:grid-cols-[1fr_340px] gap-8 items-start">
+
+  <!-- ===== Columna de pasos ===== -->
+  <div class="space-y-10">
+
+    <section aria-labelledby="h1">
+      <h2 id="h1" class="font-display font-extrabold text-xl flex items-center gap-3">
+        <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">1</span> ¿Qué necesitas?
+      </h2>
+      <div id="services" class="mt-4 grid sm:grid-cols-3 gap-3" role="radiogroup" aria-labelledby="h1"></div>
+    </section>
+
+    <section aria-labelledby="h2">
+      <h2 id="h2" class="font-display font-extrabold text-xl flex items-center gap-3">
+        <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">2</span> Ajusta los detalles
+      </h2>
+      <div id="params" class="mt-4 space-y-4"></div>
+    </section>
+
+    <section aria-labelledby="h3">
+      <h2 id="h3" class="font-display font-extrabold text-xl flex items-center gap-3">
+        <span class="grid place-items-center w-8 h-8 rounded-full bg-ink text-marker text-sm">3</span> ¿Quieres añadir algo?
+      </h2>
+      <div id="extras" class="mt-4 grid sm:grid-cols-2 gap-3"></div>
+    </section>
+  </div>
+
+  <!-- ===== Panel de desglose (solo escritorio, fijo al hacer scroll) ===== -->
+  <aside class="hidden lg:block sticky top-6" aria-live="polite">
+    <div class="card overflow-hidden">
+      <div class="bg-ink text-white p-5">
+        <p class="text-sm text-white/60">Tu presupuesto estimado</p>
+        <p id="totalDesktop" class="font-display font-extrabold text-5xl text-marker mt-1"></p>
+        <p class="text-xs text-white/50 mt-1">IVA incluido · válido <span class="vd"></span> días</p>
+      </div>
+      <div class="p-5">
+        <div id="summaryDesktop"></div>
+        <button data-open-quote class="mt-5 w-full rounded-xl bg-plano text-white font-bold py-3.5 border-2 border-ink shadow-[3px_3px_0_#0F2038] hover:bg-ink transition-colors">Pedir este presupuesto</button>
+        <p class="text-xs text-ink/50 mt-3">Estimación orientativa. Te confirmamos el precio final tras revisar tu caso.</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ===== Barra inferior flotante (móvil) con desglose desplegable ===== -->
+<div class="lg:hidden fixed inset-x-0 bottom-0 z-30">
+  <div id="sheet" class="hidden bg-white border-t-2 border-ink px-4 pt-4 pb-3 max-h-[55vh] overflow-y-auto">
+    <div id="summaryMobile"></div>
+  </div>
+  <div class="bg-ink text-white px-4 py-3 flex items-center gap-3 rounded-t-3xl">
+    <button id="toggleSheet" aria-expanded="false" class="flex-1 text-left">
+      <span class="block text-xs text-white/60">Total estimado · ver desglose ▴</span>
+      <span id="totalMobile" class="font-display font-extrabold text-2xl text-marker"></span>
+    </button>
+    <button data-open-quote class="rounded-xl bg-marker text-ink font-bold px-5 py-3">Pedir presupuesto</button>
+  </div>
+</div>
+
+<!-- ===== Modal de captación de leads ===== -->
+<dialog id="quoteDialog" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border-2 border-ink shadow-[8px_8px_0_#FFD23F] p-0 bg-white text-ink">
+  <!-- Vista 1: formulario -->
+  <form id="leadForm" novalidate class="p-5 sm:p-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h2 class="font-display font-extrabold text-2xl">Recibe tu presupuesto</h2>
+        <p class="text-sm text-ink/60 mt-1">Total estimado: <strong id="totalModal"></strong></p>
+      </div>
+      <button type="button" data-close class="text-2xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <div class="mt-5 space-y-4" id="fields"></div>
+    <button type="submit" class="mt-6 w-full rounded-xl bg-plano text-white font-bold py-3.5 hover:bg-ink transition-colors">Enviar presupuesto</button>
+    <p class="text-xs text-ink/50 mt-3">Usaremos tus datos solo para enviarte este presupuesto.</p>
+  </form>
+
+  <!-- Vista 2: confirmación -->
+  <div id="okView" class="hidden p-6 text-center">
+    <div class="pop mx-auto w-16 h-16 rounded-full bg-marker border-2 border-ink grid place-items-center text-2xl">✓</div>
+    <h2 class="font-display font-extrabold text-2xl mt-4">¡Presupuesto enviado!</h2>
+    <p class="text-ink/70 mt-2 text-sm">Referencia <strong id="okRef"></strong>. Te contactaremos en menos de 24 h laborables.</p>
+    <div class="mt-6 grid gap-3">
+      <button id="btnDownload" class="rounded-xl border-2 border-ink font-bold py-3 hover:bg-paper">Descargar presupuesto</button>
+      <a id="btnMail" class="rounded-xl bg-plano text-white font-bold py-3 hover:bg-ink" href="#">Enviármelo por correo</a>
+      <button data-close class="text-sm text-ink/60 underline mt-1">Cerrar</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+/* ==========================================================================
+   1. CONFIGURACIÓN — edita esta sección para adaptar el cotizador a tu negocio
+   ========================================================================== */
+const CONFIG = {
+  brand: 'Tu Empresa',            // Nombre que aparece en cabecera y en el presupuesto
+  locale: 'es-ES',
+  currency: 'EUR',
+  vat: 0.21,                      // IVA (21 %). Pon 0 si no aplica
+  validDays: 15,                  // Validez del presupuesto
+  email: 'hola@tuempresa.com'     // Se añade en copia al enviar por correo
+};
+
+/* Cada servicio define:
+   - base: cuota fija inicial (opcional)
+   - params: 'range'  → slider; importe = valor × rate
+             'choice' → botones; cada opción puede tener
+                         mult (porcentaje sobre el subtotal) o add (importe fijo)
+   - extras: añadidos opcionales con precio fijo                              */
+const SERVICES = [
+  { id: 'reforma', icon: '🏠', name: 'Reforma de vivienda', desc: 'Obra, acabados y baños',
+    base: 250, baseLabel: 'Visita técnica y proyecto',
+    params: [
+      { id: 'm2', type: 'range', label: 'Superficie', unit: 'm²', min: 15, max: 200, step: 5, def: 60, rate: 140 },
+      { id: 'banos', type: 'range', label: 'Baños a reformar', unit: 'baños', min: 0, max: 4, step: 1, def: 1, rate: 2200 },
+      { id: 'calidad', type: 'choice', label: 'Calidad de materiales', def: 1, options: [
+        { label: 'Básica', mult: 0.85 }, { label: 'Estándar', mult: 1 }, { label: 'Premium', mult: 1.35 } ] }
+    ],
+    extras: [
+      { id: 'escombros', label: 'Retirada de escombros', price: 280 },
+      { id: 'led', label: 'Iluminación LED', price: 650 },
+      { id: 'pintura', label: 'Pintura de techos', price: 420 },
+      { id: 'licencia', label: 'Gestión de licencia', price: 350 } ] },
+
+  { id: 'vehiculo', icon: '🚗', name: 'Mantenimiento de vehículo', desc: 'Revisión, reparación y piezas',
+    base: 35, baseLabel: 'Diagnosis con equipo',
+    params: [
+      { id: 'horas', type: 'range', label: 'Horas de mano de obra', unit: 'h', min: 1, max: 12, step: 0.5, def: 2, rate: 48 },
+      { id: 'piezas', type: 'choice', label: 'Tipo de piezas', def: 1, options: [
+        { label: 'Sin piezas', add: 0 }, { label: 'Compatibles', add: 120 }, { label: 'Originales', add: 260 } ] },
+      { id: 'vehiculo', type: 'choice', label: 'Tipo de vehículo', def: 0, options: [
+        { label: 'Turismo', mult: 1 }, { label: 'SUV / furgoneta', mult: 1.15 }, { label: 'Híbrido / eléctrico', mult: 1.25 } ] }
+    ],
+    extras: [
+      { id: 'recogida', label: 'Recogida y entrega a domicilio', price: 40 },
+      { id: 'lavado', label: 'Lavado interior y exterior', price: 25 },
+      { id: 'itv', label: 'Gestión de ITV', price: 60 },
+      { id: 'garantia', label: 'Garantía ampliada 12 meses', price: 90 } ] },
+
+  { id: 'consultoria', icon: '💼', name: 'Consultoría', desc: 'Asesoría para tu negocio',
+    base: 0, baseLabel: '',
+    params: [
+      { id: 'horas', type: 'range', label: 'Horas de consultoría', unit: 'h', min: 2, max: 80, step: 1, def: 10, rate: 75 },
+      { id: 'modalidad', type: 'choice', label: 'Modalidad', def: 0, options: [
+        { label: 'Online', mult: 0.9 }, { label: 'Mixta', mult: 1 }, { label: 'Presencial', mult: 1.15 } ] }
+    ],
+    extras: [
+      { id: 'informe', label: 'Informe ejecutivo', price: 180 },
+      { id: 'taller', label: 'Taller para el equipo', price: 450 },
+      { id: 'soporte', label: 'Soporte posterior 30 días', price: 300 } ] }
+];
+
+/* ==========================================================================
+   2. ESTADO LOCAL (aquí se guardan los leads simulados)
+   ========================================================================== */
+const state = { serviceId: SERVICES[0].id, values: {}, extras: new Set(), leads: [] };
+window.__leads = state.leads;   // Para inspeccionar en consola: __leads
+
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency }).format(n);
+const round2 = (n) => Math.round(n * 100) / 100;
+const current = () => SERVICES.find((s) => s.id === state.serviceId);
+
+/* Al cambiar de servicio se restablecen los valores por defecto */
+function resetValues() {
+  state.values = {}; state.extras = new Set();
+  current().params.forEach((p) => (state.values[p.id] = p.def));
+}
+
+/* ==========================================================================
+   3. CÁLCULO DEL PRESUPUESTO
+   ========================================================================== */
+function calc() {
+  const s = current(), lines = [];
+  if (s.base) lines.push({ label: s.baseLabel, detail: '', amount: s.base });
+
+  // a) Parámetros tipo slider: valor × tarifa
+  s.params.filter((p) => p.type === 'range').forEach((p) => {
+    const v = state.values[p.id], amount = round2(v * p.rate);
+    if (amount > 0) lines.push({ label: p.label, detail: `${v} ${p.unit} × ${fmt(p.rate)}`, amount });
+  });
+  const subtotal = lines.reduce((a, l) => a + l.amount, 0);
+
+  // b) Opciones: multiplicador sobre el subtotal, o importe fijo
+  s.params.filter((p) => p.type === 'choice').forEach((p) => {
+    const o = p.options[state.values[p.id]];
+    if (o.mult && o.mult !== 1) {
+      const pct = Math.round((o.mult - 1) * 100);
+      lines.push({ label: `${p.label}: ${o.label}`, detail: `${pct > 0 ? '+' : ''}${pct} %`, amount: round2(subtotal * (o.mult - 1)) });
+    } else if (o.add) {
+      lines.push({ label: `${p.label}: ${o.label}`, detail: '', amount: o.add });
+    }
+  });
+
+  // c) Extras marcados
+  s.extras.filter((e) => state.extras.has(e.id)).forEach((e) => lines.push({ label: e.label, detail: 'Extra', amount: e.price }));
+
+  const net = round2(lines.reduce((a, l) => a + l.amount, 0));
+  const vat = round2(net * CONFIG.vat);
+  return { lines, net, vat, total: round2(net + vat) };
+}
+
+/* ==========================================================================
+   4. RENDER DE LA INTERFAZ
+   ========================================================================== */
+/* Precio "desde": cuota base + mínimo de cada slider */
+const fromPrice = (s) => (s.base || 0) + s.params.filter((p) => p.type === 'range').reduce((a, p) => a + p.min * p.rate, 0);
+
+function renderServices() {
+  $('#services').innerHTML = SERVICES.map((s) => {
+    const on = s.id === state.serviceId;
+    return `<button type="button" role="radio" aria-checked="${on}" data-service="${s.id}"
+      class="lift relative text-left rounded-[20px] border-2 border-ink p-4 ${on ? 'bg-ink text-white shadow-[5px_5px_0_#FFD23F]' : 'bg-white shadow-[5px_5px_0_#0F2038]'}">
+      ${on ? '<span class="absolute top-3 right-3 w-7 h-7 rounded-full bg-marker text-ink grid place-items-center text-sm font-bold">✓</span>' : ''}
+      <span class="grid place-items-center w-14 h-14 rounded-2xl text-3xl ${on ? 'bg-white/10' : 'bg-paper'}">${s.icon}</span>
+      <span class="block font-display font-extrabold text-lg mt-3 leading-tight">${s.name}</span>
+      <span class="block text-sm ${on ? 'text-white/70' : 'text-ink/60'}">${s.desc}</span>
+      <span class="block text-sm font-bold mt-3 ${on ? 'text-marker' : 'text-plano'}">Desde ${fmt(fromPrice(s))} + IVA</span></button>`;
+  }).join('');
+}
+
+function renderParams() {
+  $('#params').innerHTML = current().params.map((p) => {
+    if (p.type === 'range') {
+      return `<div class="card p-5">
+        <div class="flex justify-between items-center gap-3">
+          <label for="r-${p.id}" class="font-bold">${p.label}</label>
+          <output id="o-${p.id}" class="chip font-display font-extrabold text-xl"></output></div>
+        <input id="r-${p.id}" data-range="${p.id}" type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${state.values[p.id]}" class="mt-5">
+        <div class="flex justify-between text-xs font-bold text-ink/50 mt-3"><span>${p.min} ${p.unit}</span><span>${p.max} ${p.unit}</span></div></div>`;
+    }
+    return `<div class="card p-5">
+      <p class="font-bold" id="l-${p.id}">${p.label}</p>
+      <div class="mt-3 grid grid-cols-${p.options.length} gap-2" role="radiogroup" aria-labelledby="l-${p.id}">
+        ${p.options.map((o, i) => `<button type="button" role="radio" aria-checked="${state.values[p.id] === i}" data-choice="${p.id}" data-i="${i}"
+          class="rounded-xl border-2 border-ink px-2 py-3 text-sm font-bold transition-colors ${state.values[p.id] === i ? 'bg-marker shadow-[3px_3px_0_#0F2038]' : 'bg-white text-ink/70 hover:bg-paper'}">${o.label}</button>`).join('')}
+      </div></div>`;
+  }).join('');
+  current().params.filter((p) => p.type === 'range').forEach((p) => syncRange(p.id));
+}
+
+/* Actualiza el texto del valor y el relleno del slider */
+function syncRange(id) {
+  const p = current().params.find((x) => x.id === id), el = $(`#r-${id}`);
+  const pct = ((el.value - p.min) / (p.max - p.min)) * 100;
+  el.style.setProperty('--p', pct + '%');
+  $(`#o-${id}`).textContent = `${el.value} ${p.unit}`;
+}
+
+function renderExtras() {
+  $('#extras').innerHTML = current().extras.map((e) => {
+    const on = state.extras.has(e.id);
+    return `<label class="lift flex items-center gap-3 rounded-2xl border-2 border-ink p-4 cursor-pointer ${on ? 'bg-marker shadow-[4px_4px_0_#0F2038]' : 'bg-white shadow-[4px_4px_0_#C9D3E0]'}">
+      <input type="checkbox" data-extra="${e.id}" ${on ? 'checked' : ''} class="sr-only">
+      <span class="grid place-items-center shrink-0 w-6 h-6 rounded-md border-2 border-ink text-sm font-bold ${on ? 'bg-ink text-marker' : 'bg-white'}">${on ? '✓' : ''}</span>
+      <span class="flex-1 font-medium leading-snug">${e.label}</span><span class="font-bold">+${fmt(e.price)}</span></label>`;
+  }).join('');
+}
+
+/* El total "cuenta" hasta el nuevo valor (se omite con prefers-reduced-motion) */
+let shownTotal = 0;
+function animateTotal(to) {
+  const els = ['#totalDesktop', '#totalMobile', '#totalModal'].map($), from = shownTotal; shownTotal = to;
+  cancelAnimationFrame(animateTotal.id);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return els.forEach((el) => (el.textContent = fmt(to)));
+  const t0 = performance.now();
+  const step = (t) => {
+    const k = Math.min((t - t0) / 350, 1), v = from + (to - from) * (1 - Math.pow(1 - k, 3));
+    els.forEach((el) => (el.textContent = fmt(v)));
+    if (k < 1) animateTotal.id = requestAnimationFrame(step);
+  };
+  animateTotal.id = requestAnimationFrame(step);
+}
+
+/* Desglose en tiempo real: se pinta en el panel de escritorio y en el desplegable móvil */
+function renderSummary() {
+  const c = calc();
+  const html = `<ul class="divide-y divide-dashed divide-ink/25 text-sm">
+      ${c.lines.map((l) => `<li class="flex justify-between gap-3 py-2"><span>${l.label}${l.detail ? `<small class="block text-ink/50">${l.detail}</small>` : ''}</span>
+        <span class="font-bold whitespace-nowrap ${l.amount < 0 ? 'text-plano' : ''}">${l.amount < 0 ? '−' : ''}${fmt(Math.abs(l.amount))}</span></li>`).join('')}
+    </ul>
+    <dl class="text-sm mt-3 space-y-1 border-t-2 border-ink pt-3">
+      <div class="flex justify-between"><dt>Base imponible</dt><dd>${fmt(c.net)}</dd></div>
+      <div class="flex justify-between"><dt>IVA (${Math.round(CONFIG.vat * 100)} %)</dt><dd>${fmt(c.vat)}</dd></div></dl>`;
+  $('#summaryDesktop').innerHTML = html; $('#summaryMobile').innerHTML = html;
+  animateTotal(c.total);
+  document.querySelectorAll('.vd').forEach((n) => (n.textContent = CONFIG.validDays));
+}
+
+/* ==========================================================================
+   5. EVENTOS (delegación)
+   ========================================================================== */
+document.addEventListener('click', (e) => {
+  const svc = e.target.closest('[data-service]');
+  if (svc) { state.serviceId = svc.dataset.service; resetValues(); renderAll(); return $(`[data-service="${svc.dataset.service}"]`).focus(); }
+
+  const ch = e.target.closest('[data-choice]');
+  if (ch) { state.values[ch.dataset.choice] = +ch.dataset.i; renderParams(); renderSummary(); return $(`[data-choice="${ch.dataset.choice}"][data-i="${ch.dataset.i}"]`).focus(); }
+
+  if (e.target.closest('[data-open-quote]')) return openQuote();
+  if (e.target.closest('[data-close]')) $('#quoteDialog').close();
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.dataset.range) { state.values[e.target.dataset.range] = +e.target.value; syncRange(e.target.dataset.range); renderSummary(); }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.extra) {
+    e.target.checked ? state.extras.add(e.target.dataset.extra) : state.extras.delete(e.target.dataset.extra);
+    renderExtras(); renderSummary(); $(`[data-extra="${e.target.dataset.extra}"]`).focus();
+  }
+});
+$('#toggleSheet').addEventListener('click', () => {
+  const open = $('#sheet').classList.toggle('hidden') === false;
+  $('#toggleSheet').setAttribute('aria-expanded', open);
+});
+
+/* ==========================================================================
+   6. FORMULARIO DE LEADS
+   ========================================================================== */
+const FIELDS = [
+  { id: 'name', label: 'Nombre', type: 'text', auto: 'name', req: true, check: (v) => v.length >= 2, msg: 'Escribe tu nombre.' },
+  { id: 'email', label: 'Email', type: 'email', auto: 'email', req: true, check: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v), msg: 'Escribe un email válido, por ejemplo nombre@correo.com.' },
+  { id: 'phone', label: 'Teléfono', type: 'tel', auto: 'tel', req: true, check: (v) => v.replace(/\D/g, '').length >= 9, msg: 'Escribe un teléfono de al menos 9 dígitos.' },
+  { id: 'notes', label: 'Notas (opcional)', type: 'textarea', req: false }
+];
+
+function openQuote() {
+  $('#leadForm').classList.remove('hidden'); $('#okView').classList.add('hidden');
+  $('#fields').innerHTML = FIELDS.map((f) => `<div>
+    <label for="f-${f.id}" class="block text-sm font-bold mb-1">${f.label}</label>
+    ${f.type === 'textarea'
+      ? `<textarea id="f-${f.id}" rows="3" class="w-full rounded-xl border-2 border-line p-3 focus:border-ink" placeholder="Plazos, dudas, detalles…"></textarea>`
+      : `<input id="f-${f.id}" type="${f.type}" autocomplete="${f.auto}" class="w-full rounded-xl border-2 border-line p-3 focus:border-ink">`}
+    <p id="e-${f.id}" class="hidden text-sm text-red-700 mt-1" role="alert">${f.msg || ''}</p></div>`).join('');
+  $('#quoteDialog').showModal();
+}
+
+$('#leadForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  let ok = true; const data = {};
+  FIELDS.forEach((f) => {
+    const v = $(`#f-${f.id}`).value.trim(); data[f.id] = v;
+    const bad = f.req && !f.check(v);
+    $(`#e-${f.id}`).classList.toggle('hidden', !bad);
+    $(`#f-${f.id}`).classList.toggle('border-red-600', bad);
+    if (bad) ok = false;
+  });
+  if (!ok) return $('#leadForm [aria-invalid], #leadForm input').focus();
+
+  // Se guarda el lead con todo el desglose en el estado local
+  const c = calc(), s = current();
+  const lead = { ref: 'P-' + Date.now().toString(36).toUpperCase().slice(-6), date: new Date(), client: data, service: s.name, ...c };
+  state.leads.push(lead);
+  console.log('Lead guardado (simulado):', lead);
+
+  /* PARA PRODUCCIÓN: envía el lead a tu backend, Formspree, Make/Zapier, etc.
+     fetch('https://tu-endpoint.com/leads', { method: 'POST',
+       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lead) }); */
+
+  showSuccess(lead);
+});
+
+/* Texto plano del presupuesto (sirve para descargar y para el correo) */
+function quoteText(l) {
+  const until = new Date(l.date.getTime() + CONFIG.validDays * 864e5).toLocaleDateString(CONFIG.locale);
+  return [`PRESUPUESTO ${l.ref} — ${CONFIG.brand}`, `Fecha: ${l.date.toLocaleDateString(CONFIG.locale)} (válido hasta ${until})`,
+    `Cliente: ${l.client.name} · ${l.client.email} · ${l.client.phone}`, `Servicio: ${l.service}`, '',
+    ...l.lines.map((x) => `- ${x.label}${x.detail ? ' (' + x.detail + ')' : ''}: ${fmt(x.amount)}`), '',
+    `Base imponible: ${fmt(l.net)}`, `IVA (${Math.round(CONFIG.vat * 100)} %): ${fmt(l.vat)}`, `TOTAL: ${fmt(l.total)}`,
+    l.client.notes ? `\nNotas: ${l.client.notes}` : '', '\nEstimación orientativa sujeta a confirmación.'].join('\n');
+}
+
+function burst() {                                           // Confeti ligero (CSS)
+  const cols = ['#FFD23F', '#2447D6', '#0F2038'];
+  for (let i = 0; i < 28; i++) {
+    const n = document.createElement('i'); n.className = 'cf';
+    n.style.cssText = `left:${Math.random() * 100}%;background:${cols[i % 3]};animation-delay:${Math.random() * .3}s;--dx:${(Math.random() - .5) * 90}px`;
+    $('#okView').appendChild(n);
+  }
+  setTimeout(() => document.querySelectorAll('.cf').forEach((n) => n.remove()), 2200);
+}
+
+function showSuccess(l) {
+  $('#leadForm').classList.add('hidden'); $('#okView').classList.remove('hidden');
+  $('#okRef').textContent = l.ref; burst();
+  const text = quoteText(l);
+  $('#btnDownload').onclick = () => {                       // Descarga como archivo .txt
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    a.download = `presupuesto-${l.ref}.txt`; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $('#btnMail').href = `mailto:${l.client.email}?cc=${CONFIG.email}&subject=${encodeURIComponent('Tu presupuesto ' + l.ref)}&body=${encodeURIComponent(text)}`;
+}
+
+/* ==========================================================================
+   7. ARRANQUE
+   ========================================================================== */
+function renderAll() { renderServices(); renderParams(); renderExtras(); renderSummary(); }
+$('#brand').textContent = CONFIG.brand;
+resetValues(); renderAll();
+</script>
+</body>
+</html>
